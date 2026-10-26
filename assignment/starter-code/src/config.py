@@ -4,7 +4,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-DATA_DIR = ROOT / "data"
+# Check if data directory is under starter-code or one level up in assignment/
+if (ROOT / "data").exists():
+    DATA_DIR = ROOT / "data"
+elif (ROOT.parent / "data").exists():
+    DATA_DIR = ROOT.parent / "data"
+else:
+    DATA_DIR = ROOT / "data"
+
 BATCHES_DIR = DATA_DIR / "sample_batches"
 
 SILVER_DIR = ROOT / "silver"
