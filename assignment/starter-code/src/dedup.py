@@ -1,21 +1,52 @@
-"""Task 2: Deduplication - Retried Load.
+"""Task 2: Deduplication - Retried Load."""
 
-Before implementing, read skills/deduplication/SKILL.md, identify its gap for
-a repeated business key whose non-key values differ, and MODIFY the skill
-file first. Then implement against your modified skill.
-
-TODO: implement dedup_invoices() so that:
-  - rows whose invoice_id already exists in silver AND are identical on every
-    non-key column are skipped (true duplicates)
-  - rows whose invoice_id already exists in silver but differ on a non-key
-    column are routed to quarantine with reason CONFLICTING_KEY
-    (see config.QUARANTINE_REASONS)
-  - rows whose invoice_id is new are passed through for insertion
-"""
-
+from functools import reduce
+from typing import Tuple
 from pyspark.sql import DataFrame
+from pyspark.sql import functions as F
+
+from . import config
 
 
-def dedup_invoices(incoming_df: DataFrame, existing_silver_df: DataFrame):
-    """TODO: return (rows_to_insert_df, rows_to_quarantine_df)."""
-    raise NotImplementedError
+def dedup_invoices(
+    incoming_df: DataFrame,
+    existing_silver_df: DataFrame,
+) -> Tuple[DataFrame, DataFrame]:
+    """Deduplicate incoming invoices against existing silver invoices.
+
+    Returns:
+        (rows_to_insert_df, rows_to_quarantine_df)
+    """
+    # 1. Rows with a new invoice_id pass through for insertion
+    rows_to_insert_df = incoming_df.join(
+        existing_silver_df,
+        on="invoice_id",
+        how="left_anti",
+    )
+
+    # 2. Rows sharing an existing invoice_id
+    matched = incoming_df.alias("in").join(
+        existing_silver_df.alias("ex"),
+        on="invoice_id",
+        how="inner",
+    )
+
+    # Compare all non-key columns to detect conflicts
+    non_key_cols = [c for c in incoming_df.columns if c != "invoice_id"]
+    
+    # Check if any column differs (handling null-safe equality via <=> if needed, but != covers values)
+    has_conflict = reduce(
+        lambda acc, c: acc | ~(F.col(f"in.{c}") == F.col(f"ex.{c}")),
+        non_key_cols,
+        F.lit(False),
+    )
+
+    # 3. Conflicting rows are tagged and sent to quarantine
+    reason_code = config.QUARANTINE_REASONS["CONFLICTING_KEY"]
+    rows_to_quarantine_df = (
+        matched.filter(has_conflict)
+        .select("in.*")
+        .withColumn("quarantine_reason", F.lit(reason_code))
+    )
+
+    return rows_to_insert_df, rows_to_quarantine_df

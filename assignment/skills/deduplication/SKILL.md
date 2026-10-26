@@ -1,5 +1,5 @@
 ---
-name: silver-deduplication
+name: deduplication
 description: >
   Guide a bronze-to-silver transformation step so that a redelivered batch does
   not create duplicate records, and so that a repeated business key is routed
