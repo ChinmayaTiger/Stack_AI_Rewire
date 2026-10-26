@@ -1,14 +1,15 @@
-"""Skill-driven and drift/quarantine logging.
+﻿"""Skill-driven and drift/quarantine logging."""
 
-TODO: implement a simple logger (print or a text/log file under
-outputs/artifacts/) that records, per batch: entity, batch id, rows read,
-rows written to silver, rows quarantined (with reason), and any skill gap
-identified/closed for that batch. This is your skill-driven evidence log.
-"""
+from pathlib import Path
+from src import config
+
+LOG_FILE = config.ROOT / "outputs" / "artifacts" / "pipeline_log.txt"
 
 
-def log_event(entity: str, batch_id: str, message: str):
-    """TODO: append a line to outputs/artifacts/pipeline_log.txt (or print),
-    e.g. '[batch_3] billing_accounts: unrecognized signup_date format on
-    ACC-0104, quarantined.'"""
-    raise NotImplementedError
+def log_event(entity: str, batch_id: str, message: str) -> None:
+    """Append a log entry recording batch actions, metrics, and skill-driven events."""
+    LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    log_line = f"[{batch_id}] {entity}: {message}\n"
+    print(log_line.strip())
+    with open(LOG_FILE, "a", encoding="utf-8") as f:
+        f.write(log_line)

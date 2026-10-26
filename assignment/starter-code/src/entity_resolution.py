@@ -1,24 +1,53 @@
-"""Task 7: Entity Resolution - Reused Account IDs.
-
-Author skills/entity_resolution/SKILL.md from scratch before implementing
-this module (no stub SKILL.md is provided).
-
-TODO: implement resolve_entities() so that:
-  - an incoming row whose account_id already exists in silver, but whose
-    non-key attributes (customer_name, signup_date, source_system) are
-    inconsistent with the existing identity, is assigned a new surrogate
-    identity rather than merged into the existing account's history
-  - the original legacy_v1 account's existing rows and SCD2 history are left
-    untouched
-  - email_masked for the new identity is carried through unchanged and is
-    never derived from or cross-referenced against the original account
-"""
+﻿"""Task 7: Entity Resolution - Reused Account IDs."""
 
 from pyspark.sql import DataFrame
+from pyspark.sql import functions as F
 
 
-def resolve_entities(incoming_df: DataFrame, existing_silver_df: DataFrame) -> DataFrame:
-    """TODO: return a DataFrame where reused-but-conflicting account_id rows
-    have been assigned a new surrogate identity (e.g. a new synthetic
-    account_id or a separate identity key column)."""
-    raise NotImplementedError
+def resolve_entities(
+    incoming_df: DataFrame,
+    existing_silver_df: DataFrame,
+) -> DataFrame:
+    """Assigns a new surrogate identity to incoming rows whose account_id collides
+    with an existing silver entity representing a different physical customer.
+
+    Args:
+        incoming_df: Incoming accounts batch.
+        existing_silver_df: Existing silver billing accounts.
+
+    Returns:
+        DataFrame with resolved account_id values.
+    """
+    # Extract existing identities without touching masked fields
+    existing_identities = existing_silver_df.select(
+        F.col("account_id"),
+        F.col("customer_name").alias("_ex_customer_name"),
+        F.col("source_system").alias("_ex_source_system"),
+    ).dropDuplicates(["account_id"])
+
+    joined = incoming_df.join(
+        existing_identities,
+        on="account_id",
+        how="left",
+    )
+
+    # Inconsistent non-key attributes indicate a distinct physical entity
+    is_conflict = (
+        F.col("_ex_customer_name").isNotNull()
+        & (
+            (F.col("customer_name") != F.col("_ex_customer_name"))
+            | (F.col("source_system") != F.col("_ex_source_system"))
+        )
+    )
+
+    orig_cols = incoming_df.columns
+
+    resolved_df = joined.withColumn(
+        "account_id",
+        F.when(
+            is_conflict,
+            F.concat(F.col("account_id"), F.lit("-"), F.col("source_system")),
+        ).otherwise(F.col("account_id")),
+    ).select(orig_cols)
+
+    return resolved_df

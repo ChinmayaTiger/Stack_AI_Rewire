@@ -1,4 +1,4 @@
----
+﻿---
 name: silver-scd2-history
 description: >
   Track a tracked attribute's changes over time (e.g. a subscription plan) so
@@ -31,7 +31,7 @@ queryable by time.
 - The requirement is to answer point-in-time questions about that attribute's
   value, not just its current value.
 
-This skill assumes exactly one change event per entity per batch. It does not
+This skill assumes at most one change event per entity per batch. It does not
 cover multiple simultaneous attribute changes on the same row.
 
 ## Inputs / Context Required
@@ -58,7 +58,7 @@ becomes false) and a new row is appended representing the new value.
 
 **Reason**: before implementing, decide:
 - Which row currently represents the entity's "current" state?
-- What is the effective date of the incoming change, and does it fall after
+- What is the effective date of the incoming change, and does it fall on or after
   the current row's `valid_from`?
 - What are `valid_from`/`valid_to` for the new row, and for the row being
   closed?
@@ -66,67 +66,35 @@ becomes false) and a new row is appended representing the new value.
 ## Decision Rules
 
 - Exactly one row per entity may have `is_current = true` at any time.
-- On a tracked-attribute change, set the previously-current row's `valid_to` to
-  the incoming change's effective date, and its `is_current` to false.
-- Insert a new row for the entity with the new attribute value, `valid_from`
-  set to the effective date, `valid_to` set to null, and `is_current` set to
-  true.
+- **Normal Chronological Change**: When `effective_date >= current.valid_from`:
+  - Set the previously-current row's `valid_to` to `effective_date`, and its `is_current` to `false`.
+  - Insert a new row for the entity with the new attribute value, `valid_from` set to `effective_date`, `valid_to` set to `null`, and `is_current` set to `true`.
+- **Out-of-Order Effective Date (Gap Closure)**: When `effective_date < current.valid_from`:
+  - A change event arriving with an effective date preceding the entity's current active interval cannot be cleanly appended without corrupting temporal validity (`valid_to < valid_from`) or creating overlapping current intervals.
+  - The incoming change row MUST NOT modify the existing silver record and MUST be routed to quarantine with controlled reason `out_of_order_effective_date`.
 - Historical rows are never deleted or overwritten once closed.
 
 ## Implementation Guidance
 
-1. Read the incoming change event (entity key, new attribute value, effective
-   date).
-2. Look up the entity's current row in the target (`is_current = true`).
-3. Close the current row: set `valid_to = effective_date`, `is_current =
-   false`.
-4. Construct and append the new row: `valid_from = effective_date`, `valid_to
-   = null`, `is_current = true`, with the new attribute value and all other
-   unchanged columns carried forward.
-5. Write the closed row and the new row back to the target (overwrite the
-   closed row's partition/file, append the new row, or use a table format that
-   supports row-level update).
-
-```python
-closed_df = current_df.withColumn(
-    "valid_to", F.when(F.col("account_id") == changed_id, effective_date).otherwise(F.col("valid_to"))
-).withColumn(
-    "is_current", F.when(F.col("account_id") == changed_id, F.lit(False)).otherwise(F.col("is_current"))
-)
-new_row_df = spark.createDataFrame([...])  # new_plan_id, valid_from=effective_date, valid_to=None, is_current=True
-result_df = closed_df.unionByName(new_row_df)
-```
+1. Read the incoming change event (`account_id`, `new_plan_id`, `effective_date`).
+2. Match against current silver records where `is_current = true`.
+3. Compare `effective_date` against `valid_from`:
+   - If `effective_date < valid_from`, route the change event to quarantine with `quarantine_reason = 'out_of_order_effective_date'`.
+   - If `effective_date >= valid_from`, proceed to SCD2 update.
+4. For valid change events, close out the current active row: set `valid_to = effective_date`, `is_current = false`.
+5. Construct and append the new active row: carry over non-changing attributes (`customer_name`, `email_masked`, etc.), assign `plan_id = new_plan_id`, `valid_from = effective_date`, `valid_to = null`, and `is_current = true`.
+6. Retain all untouched accounts and historical inactive rows without modification.
 
 ## Validation
 
-- Ingest a baseline row, then a change event; assert exactly one `is_current =
-  true` row remains for the entity afterward.
-- Assert querying the entity's attribute as of a date before the change
-  returns the old value, and as of a date on/after the change returns the new
-  value.
-- Assert the closed row's `valid_to` exactly equals the new row's
-  `valid_from`, with no gap or overlap.
+- Ingest a baseline row, then a change event; assert exactly one `is_current = true` row remains for the entity afterward.
+- Assert querying the entity's attribute as of a date before the change returns the old value, and as of a date on/after the change returns the new value.
+- Assert the closed row's `valid_to` exactly equals the new row's `valid_from`, with no gap or overlap.
+- Assert that any out-of-order event is quarantined with reason `out_of_order_effective_date` and leaves the existing silver row intact.
 
 ## Common Failure Scenarios
 
-- The current-row lookup matches more than one row (e.g. an entity that was
-  never properly closed out from a previous run), producing two rows with
-  `is_current = true`.
+- The incoming effective date is earlier than `valid_from`, producing an inverted interval (`valid_to < valid_from`) or an invalid second active record.
+- The current-row lookup matches more than one row, producing duplicate `is_current = true` rows.
 - The new row is appended without closing the old one, leaving two open rows.
-- `valid_to` and the new row's `valid_from` are computed independently and
-  drift apart by even one day, creating a gap where no row is valid.
-
-## Common Mistakes
-
-- Updating the existing row's attribute value in place instead of closing it
-  and appending a new one - this destroys history.
-- Hardcoding the assumption that the incoming effective date is always later
-  than the entity's current `valid_from`.
-- Forgetting to carry forward unchanged columns onto the new row, leaving them
-  null.
-
-## Reusability
-
-Applies to any entity and any tracked attribute where point-in-time history
-must be queryable - substitute the entity, the tracked attribute(s), and the
-effective-date source for the case at hand.
+- Forgetting to carry forward unchanged columns onto the new row, leaving them null.

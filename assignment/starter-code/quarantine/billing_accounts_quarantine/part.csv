@@ -1,0 +1,3 @@
+account_id,customer_name,email_masked,signup_date,source_system,plan_id,status,quarantine_reason,old_plan_id,new_plan_id,effective_date
+ACC-0104,Nina Costa,n***@trb6***.com,"December 11, 2025",platform_v2,PLAN-GOLD,active,unrecognized_format,,,
+ACC-0053,,,,,,,out_of_order_effective_date,PLAN-SILVER,PLAN-PLATINUM,2024-09-30

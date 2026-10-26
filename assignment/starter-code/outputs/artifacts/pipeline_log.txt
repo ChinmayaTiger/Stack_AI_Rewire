@@ -1,0 +1,56 @@
+[batch_1] billing_accounts: Loaded initial 100 rows
+[batch_1] plan_catalog: Loaded initial 6 rows
+[batch_1] invoices: Loaded initial 480 rows
+[batch_2] invoices: Processed 6 rows: 0 inserted, 4 quarantined, 2 duplicates skipped
+[batch_3] billing_accounts: Processed 4 rows: 3 valid, 1 quarantined
+[batch_1] billing_accounts: Loaded initial 100 rows
+[batch_1] plan_catalog: Loaded initial 6 rows
+[batch_1] invoices: Loaded initial 480 rows
+[batch_2] invoices: Processed 6 rows: 0 inserted, 4 quarantined, 2 duplicates skipped
+[batch_3] billing_accounts: Processed 4 rows: 3 valid, 1 quarantined
+[batch_1] billing_accounts: Loaded initial 100 rows
+[batch_1] plan_catalog: Loaded initial 6 rows
+[batch_1] invoices: Loaded initial 480 rows
+[batch_2] invoices: Processed 6 rows: 0 inserted, 4 quarantined, 2 duplicates skipped
+[batch_3] billing_accounts: Processed 4 rows: 3 valid, 1 quarantined
+[batch_4] billing_accounts: Processed 5 plan changes: 1 out of order quarantined
+[batch_5] billing_accounts: Processed 3 reused account IDs, resolved to distinct entities
+[batch_1] billing_accounts: Loaded initial 100 rows
+[batch_1] plan_catalog: Loaded initial 6 rows
+[batch_1] invoices: Loaded initial 480 rows
+[batch_2] invoices: Processed 6 rows: 0 inserted, 4 quarantined, 2 duplicates skipped
+[batch_3] billing_accounts: Processed 4 rows: 3 valid, 1 quarantined
+[batch_4] billing_accounts: Processed 5 plan changes: 1 out of order quarantined
+[batch_5] billing_accounts: Processed 3 reused account IDs, resolved to distinct entities
+[batch_1] billing_accounts: Loaded initial 100 rows
+[batch_1] plan_catalog: Loaded initial 6 rows
+[batch_1] invoices: Loaded initial 480 rows
+[batch_2] invoices: Processed 6 rows: 0 inserted, 4 quarantined, 2 duplicates skipped
+[batch_3] billing_accounts: Processed 4 rows: 3 valid, 1 quarantined
+[batch_4] billing_accounts: Processed 5 plan changes: 1 out of order quarantined
+[batch_5] billing_accounts: Processed 3 reused account IDs, resolved to distinct entities
+[complete] pipeline: Successfully finished pipeline and wrote all silver & quarantine tables
+[batch_1] billing_accounts: Loaded initial 100 rows
+[batch_1] plan_catalog: Loaded initial 6 rows
+[batch_1] invoices: Loaded initial 480 rows
+[batch_2] invoices: Processed 6 rows: 0 inserted, 4 quarantined, 2 duplicates skipped
+[batch_3] billing_accounts: Processed 4 rows: 3 valid, 1 quarantined
+[batch_4] billing_accounts: Processed 5 plan changes: 1 out of order quarantined
+[batch_5] billing_accounts: Processed 3 reused account IDs, resolved to distinct entities
+[complete] pipeline: Successfully finished pipeline and wrote all silver & quarantine tables
+[batch_1] billing_accounts: Loaded initial 100 rows
+[batch_1] plan_catalog: Loaded initial 6 rows
+[batch_1] invoices: Loaded initial 480 rows
+[batch_2] invoices: Processed 6 rows: 0 inserted, 4 quarantined, 2 duplicates skipped
+[batch_3] billing_accounts: Processed 4 rows: 3 valid, 1 quarantined
+[batch_4] billing_accounts: Processed 5 plan changes: 1 out of order quarantined
+[batch_5] billing_accounts: Processed 3 reused account IDs, resolved to distinct entities
+[complete] pipeline: Successfully finished pipeline and wrote all silver & quarantine tables
+[batch_1] billing_accounts: Loaded initial 100 rows
+[batch_1] plan_catalog: Loaded initial 6 rows
+[batch_1] invoices: Loaded initial 480 rows
+[batch_2] invoices: Processed 6 rows: 0 inserted, 4 quarantined, 2 duplicates skipped
+[batch_3] billing_accounts: Processed 4 rows: 3 valid, 1 quarantined
+[batch_4] billing_accounts: Processed 5 plan changes: 1 out of order quarantined
+[batch_5] billing_accounts: Processed 3 reused account IDs, resolved to distinct entities
+[complete] pipeline: Successfully finished pipeline and wrote all silver & quarantine tables

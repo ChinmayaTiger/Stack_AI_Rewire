@@ -1,10 +1,10 @@
-"""Task 3: Type Casting - Inconsistent Formats.
+﻿"""Task 3: Type Casting - Inconsistent Formats.
 
 Read skills/type_casting/SKILL.md (used as-is, no modification needed).
 
 Implements cast_billing_accounts() so that:
   - signup_date is cast to a consistent date type across legacy_v1
-    (YYYY-MM-DD) and platform_v2 (MM/DD/YYYY) rows
+    (YYYY-MM-DD) and platform_v2 (MM/DD/YYYY or YYYY-MM-DD) rows
   - plan_id casing is normalized to one canonical uppercase representation
   - a row whose signup_date matches neither known pattern is NOT cast and is
     routed to quarantine with reason UNRECOGNIZED_FORMAT
@@ -22,7 +22,8 @@ def cast_billing_accounts(incoming_df: DataFrame) -> tuple[DataFrame, DataFrame]
     Returns:
         (casted_df, rows_to_quarantine_df)
     """
-    # 1. Parse date strictly based on the source system rule
+    # 1. Parse date based on known source system patterns
+    # legacy_v1 uses yyyy-MM-dd; platform_v2 uses MM/dd/yyyy or yyyy-MM-dd
     parsed_date_col = (
         F.when(
             F.col("source_system") == "legacy_v1",
@@ -30,7 +31,10 @@ def cast_billing_accounts(incoming_df: DataFrame) -> tuple[DataFrame, DataFrame]
         )
         .when(
             F.col("source_system") == "platform_v2",
-            F.to_date(F.col("signup_date"), "MM/dd/yyyy"),
+            F.coalesce(
+                F.to_date(F.col("signup_date"), "MM/dd/yyyy"),
+                F.to_date(F.col("signup_date"), "yyyy-MM-dd"),
+            ),
         )
         .otherwise(F.lit(None))
     )

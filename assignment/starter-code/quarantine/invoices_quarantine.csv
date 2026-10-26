@@ -1,0 +1,5 @@
+invoice_id,account_id,invoice_date,amount_due,currency,payment_status,quarantine_reason
+INV-00113,ACC-0031,2025-09-02,89.5,USD,Paid,conflicting_key
+INV-00220,ACC-0058,2025-10-14,155.0,USD,Pending,conflicting_key
+INV-00301,ACC-0002,2025-12-01,42.1,USD,Paid,conflicting_key
+INV-00378,ACC-0090,2026-01-20,310.65,USD,Refunded,conflicting_key
